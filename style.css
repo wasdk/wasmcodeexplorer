@@ -1,0 +1,105 @@
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: "Arial", sans-serif;
+    width: 100%;
+    height: 100%;
+}
+
+.toolbar {
+    color: white;
+    background: black;
+    padding: 10px;
+    display: flex;
+    flex-direction: row;
+    height: 20px;
+}
+
+.toolbar > .title {
+    font-size: 20px;
+    flex: 1 1 auto;
+}
+
+#openFile {
+    flex: 0 0 100px;
+    background-color: blue;
+    color: white;
+    border: 1px dashed white;
+}
+
+.container {
+   position: absolute;
+   top: 40px;
+   left: 0;
+   right: 0;
+   bottom: 0; 
+   background-color: gray;
+}
+
+.hidden {
+  display: none;
+}
+
+.dump {
+   font-family: Courier, monospace;
+   background-color: white;
+   overflow: scroll;
+   display: flex;
+   flex-direction: row; 
+}
+
+.dump .addresses {
+    flex: 0 0 100px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.dump .rows {
+    flex: 1 1 auto;
+}
+
+.dump .address {
+}
+
+
+.dump .row .o {
+  border-right: 4px solid white;
+}
+
+.dump .grp.c1 .o {
+  color: white;
+  background-color: red;
+  border-right-color: red;
+}
+.dump .grp.c2 .o {
+  color: yellow;
+  background-color: blue;
+  border-right-color: blue;
+}
+.dump .grp.c3 .o {
+  color: white;
+  background-color: green;
+  border-right-color: green;
+}
+.dump .grp.c4 .o {
+  background-color: yellow;
+  border-right-color: yellow;
+}
+.dump .grp.c5 .o {
+  background-color: pink;
+  border-right-color: pink;
+}
+.dump .grp.c6 .o {
+  background-color: cyan;
+  border-right-color: cyan;
+}
+.dump .grp.c7 .o {
+  background-color: silver;
+  border-right-color: silver;
+}
+.dump .grp.lst .o:last-child {
+  border-right-color: white;    
+}

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.3/require.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="style.css">
+    </head>
+    <body>
+        <div class="toolbar">
+            <div class="title">
+                WebAssembly Code Explorer
+            </div>
+            <button id="openFile">Open File</button>
+            <div class="hidden"><input type="file" id="browseFile"></div>
+        </div>
+        <div class="container">
+            <div id="dump" class="dump">
+                <div class="addresses">
+                    <div>00000000</div>
+                </div>
+                <div class="rows">
+                    <div class="row">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script src="./viewer.js"></script>
+    </body>
+</html>
