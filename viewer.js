@@ -142,6 +142,7 @@ function disassemble(buffer) {
   var reader = new wasmparser.BinaryReader();
   reader.setData(content, 0, content.byteLength);
   var dis = new wasmdis.WasmDisassembler();
+  dis.addOffsets = true;
   text.textContent = dis.disassemble(reader);
 }
 function openWasm(buffer) {
