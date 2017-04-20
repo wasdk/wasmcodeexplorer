@@ -37,6 +37,17 @@ body {
    right: 0;
    bottom: 0; 
    background-color: gray;
+   display: flex;
+   flex-direction: row;
+}
+
+.text {
+   flex: 1 1 auto;
+   overflow: scroll;
+   padding-left: 10px;
+   border-left: 1px solid gray;
+   background-color: white;
+   white-space: pre;
 }
 
 .hidden {
@@ -44,6 +55,7 @@ body {
 }
 
 .dump {
+   flex: 0 0 600px;
    font-family: Courier, monospace;
    background-color: white;
    overflow: scroll;
