@@ -115,3 +115,11 @@ body {
 .dump .grp.lst .o:last-child {
   border-right-color: white;    
 }
+
+.selected {
+  background-color: yellow;
+  box-shadow: 0 0 10px yellow;
+}
+.grp.selected .o {
+  opacity: .6;
+}

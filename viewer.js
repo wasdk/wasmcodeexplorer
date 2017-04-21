@@ -6,6 +6,11 @@ function initialize() {
     var browseInput = document.getElementById('browseFile');
     browseInput.addEventListener('change', browseInputChanged);
 
+    var dumpRows = document.getElementById('dump').querySelector('.rows');
+    dumpRows.addEventListener('click', rowClicked);
+    var text = document.getElementById('text');
+    text.addEventListener('click', textClicked);
+
     colors = Object.create(null);
     colors[wasmparser.BinaryReaderState.BEGIN_SECTION] = 1;
     colors[wasmparser.BinaryReaderState.CODE_OPERATOR] = 2;
@@ -59,11 +64,53 @@ function initialize() {
     };
 }
 
+function flashOffset(offset, from) {
+    var oldSelection = document.querySelectorAll(".selected");
+    for (var i = 0; i < oldSelection.length; i++)
+        oldSelection[i].classList.remove('selected');
+
+    if (!offset)
+        return;
+
+    var line = document.querySelector(".line[data-offset = '" + offset + "']");
+    if (line) {
+        if (from === 'grp')
+            line.scrollIntoView();
+        line.classList.add('selected');
+    }
+
+    var grps = document.querySelectorAll(".grp[data-offset = '" + offset + "']");
+    if (grps.length > 0 && from === 'line')
+        grps[0].scrollIntoView();
+    for (var i = 0; i < grps.length; i++)
+        grps[i].classList.add('selected');
+}
+
+function rowClicked(e) {
+    var t = e.target;
+    while (t !== document.body && !t.classList.contains('grp'))
+        t = t.parentNode;
+    if (t === document.body)
+        return;
+    var offset = t.dataset.offset;
+    flashOffset(offset, 'grp');
+}
+
+function textClicked(e) {
+    var t = e.target;
+    while (t !== document.body && !t.classList.contains('line'))
+        t = t.parentNode;
+    if (t === document.body)
+        return;
+    var offset = t.dataset.offset;
+    flashOffset(offset, 'line');
+}
+
 function defaultAnnotator(result) {
-  var s = JSON.stringify(result, null, 2);
-  if (s.length <= 1024)
-    return s;
-  return s.substring(0, 1024) + '...';
+    var s = JSON.stringify(result, null, 2);
+    if (s.length <= 1024)
+        return s;
+    return s.substring(0, 1024) + '...';
 }
 
 function formatType(type) {
@@ -130,6 +177,7 @@ function paintCode(octets) {
           }
           groupSpan.appendChild(octet);
           groupSpan.title = annotate(reader.state, reader.result, lastPosition);
+          groupSpan.dataset.offset = lastPosition;
       }
       groupSpan.classList.add('lst');
       lastPosition = reader.position;
@@ -143,8 +191,20 @@ function disassemble(buffer) {
   reader.setData(content, 0, content.byteLength);
   var dis = new wasmdis.WasmDisassembler();
   dis.addOffsets = true;
-  text.textContent = dis.disassemble(reader);
+  var lines = dis.disassemble(reader).split('\n');
+  lines.forEach(function (s) {
+    var line = document.createElement('div');
+    line.className = 'line';
+    var offset;
+    line.textContent = s.replace(/\s;;\s@([0-9A-Fa-f]+)$/, function (all, n) {
+        offset = parseInt(n, 16);
+        return '';
+    });
+    line.dataset.offset = offset;
+    text.appendChild(line);
+  });
 }
+
 function openWasm(buffer) {
     var dump = document.getElementById('dump');
     var addresses = dump.querySelector('.addresses');
