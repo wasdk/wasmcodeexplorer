@@ -219,7 +219,7 @@ function openWasm(buffer) {
         var address = document.createElement('div');
         address.className = 'address';
         var rowOffset = i * perRow;
-        address.textContent = toHex(rowOffset, 8);
+        address.textContent = "0x" + toHex(rowOffset, 8);
         addresses.appendChild(address);
         var itemsCount = Math.min(content.length - rowOffset, perRow);
         for (var j = 0; j < itemsCount; j++) {

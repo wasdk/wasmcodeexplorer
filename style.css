@@ -1,53 +1,63 @@
 html, body {
-    margin: 0;
-    padding: 0;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-    font-family: "Arial", sans-serif;
-    width: 100%;
-    height: 100%;
+  font-family: 'Roboto', sans-serif;
+  width: 100%;
+  height: 100%;
+  background-color: #212121;
 }
 
 .toolbar {
-    color: white;
-    background: black;
-    padding: 10px;
-    display: flex;
-    flex-direction: row;
-    height: 20px;
+  color: white;
+  background: black;
+  padding: 10px;
+  display: flex;
+  flex-direction: row;
+  height: 40px;
 }
 
 .toolbar > .title {
-    font-size: 20px;
-    flex: 1 1 auto;
+  font-size: 20px;
+  flex: 1 1 auto;
+  line-height: 40px;
 }
 
 #openFile {
-    flex: 0 0 100px;
-    background-color: blue;
-    color: white;
-    border: 1px dashed white;
+  flex: 0 0 100px;
+  background-color: #212121;
+  color: white;
+  border: 0;
+  padding: 4px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+}
+
+#openFile:hover {
+  background-color: #424242;
 }
 
 .container {
-   position: absolute;
-   top: 40px;
-   left: 0;
-   right: 0;
-   bottom: 0; 
-   background-color: gray;
-   display: flex;
-   flex-direction: row;
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /*background-color: gray;*/
+  display: flex;
+  flex-direction: row;
 }
 
 .text {
-   flex: 1 1 auto;
-   overflow: scroll;
-   padding-left: 10px;
-   border-left: 1px solid gray;
-   background-color: white;
-   white-space: pre;
+  flex: 1 1 auto;
+  overflow: auto;
+  border-left: 1px solid gray;
+  white-space: pre;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  color: #FAFAFA;
 }
 
 .hidden {
@@ -55,71 +65,92 @@ body {
 }
 
 .dump {
-   flex: 0 0 600px;
-   font-family: Courier, monospace;
-   background-color: white;
-   overflow: scroll;
-   display: flex;
-   flex-direction: row; 
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  color: #616161;
+  flex: 0 0 600px;
+  overflow: auto;
+  display: flex;
+  flex-direction: row;
 }
 
 .dump .addresses {
-    flex: 0 0 100px;
-    padding-left: 10px;
-    padding-right: 10px;
+  flex: 0 0 100px;
+  background-color: #424242;
 }
 
 .dump .rows {
-    flex: 1 1 auto;
+  flex: 1 1 auto;
+  /*padding: 8px;*/
 }
 
 .dump .address {
+  margin: 8px;
 }
 
-
-.dump .row .o {
-  border-right: 4px solid white;
-}
-
-.dump .grp.c1 .o {
+.dump .row {
+  margin: 8px;
   color: white;
-  background-color: red;
-  border-right-color: red;
 }
-.dump .grp.c2 .o {
-  color: yellow;
-  background-color: blue;
-  border-right-color: blue;
+
+.dump .grp .o {
+  padding: 4px;
 }
-.dump .grp.c3 .o {
-  color: white;
-  background-color: green;
-  border-right-color: green;
-}
-.dump .grp.c4 .o {
-  background-color: yellow;
-  border-right-color: yellow;
-}
-.dump .grp.c5 .o {
-  background-color: pink;
-  border-right-color: pink;
-}
-.dump .grp.c6 .o {
-  background-color: cyan;
-  border-right-color: cyan;
-}
-.dump .grp.c7 .o {
-  background-color: silver;
-  border-right-color: silver;
-}
+
 .dump .grp.lst .o:last-child {
-  border-right-color: white;    
+  border-right-color: white;
 }
 
 .selected {
-  background-color: yellow;
-  box-shadow: 0 0 10px yellow;
+  background-color: #FFF176;
+  color: #212121;
 }
+
 .grp.selected .o {
-  opacity: .6;
+  background-color: #FFF176 !important;
+  color: #212121 !important;
 }
+
+.line {
+  padding-left: 8px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.dump .grp.c1 .o {
+  background-color: #D32F2F;
+  border-right-color: #D32F2F;
+}
+
+.dump .grp.c2 .o {
+  background-color: #1976D2;
+  border-right-color: #1976D2;
+}
+
+.dump .grp.c3 .o {
+  background-color: #388E3C;
+  border-right-color: #388E3C;
+}
+
+.dump .grp.c4 .o {
+  color: black;
+  background-color: #DCE775;
+  border-right-color: #DCE775;
+}
+
+.dump .grp.c5 .o {
+  background-color: #7E57C2;
+  border-right-color: #7E57C2;
+}
+
+.dump .grp.c6 .o {
+  color: black;
+  background-color: #84FFFF;
+  border-right-color: #84FFFF;
+}
+
+.dump .grp.c7 .o {
+  background-color: #616161;
+  border-right-color: #616161;
+}
+
