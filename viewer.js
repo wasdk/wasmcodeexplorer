@@ -35,6 +35,7 @@ function initialize() {
       return 'ID: ' + wasmparser.SectionCode[result.id] +
              (result.name ? '\nName: ' + wasmparser.bytesToString(result.name) : '');
     };
+    annotators[wasmparser.BinaryReaderState.INIT_EXPRESSION_OPERATOR] =
     annotators[wasmparser.BinaryReaderState.CODE_OPERATOR] = function (result) {
       return 'Operator: ' + wasmparser.OperatorCode[result.code] + '\n' +
              JSON.stringify(result);
