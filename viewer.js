@@ -211,6 +211,8 @@ function openWasm(buffer) {
     addresses.textContent = '';
     var rows = dump.querySelector('.rows');
     rows.textContent = '';
+    var asciis = dump.querySelector('.asciis');
+    asciis.textContent = '';
     content = new Uint8Array(buffer);
     var rowCount = Math.max(1, Math.ceil(content.length / perRow));
     for (var i = 0; i < rowCount; i++) {
@@ -222,13 +224,20 @@ function openWasm(buffer) {
         address.textContent = "0x" + toHex(rowOffset, 8);
         addresses.appendChild(address);
         var itemsCount = Math.min(content.length - rowOffset, perRow);
+        var str = '';
         for (var j = 0; j < itemsCount; j++) {
+            var b = content[rowOffset + j];
             var octet = document.createElement('span');
             octet.className = 'o';
-            octet.textContent = toHex(content[rowOffset + j], 2);          
+            octet.textContent = toHex(b, 2);
             row.appendChild(octet);
+            str += b >= 32 && b < 127 ? String.fromCharCode(b) : '.';
         }
         rows.appendChild(row);
+        var ascii = document.createElement('div');
+        ascii.className = 'ascii';
+        ascii.textContent = str;
+        asciis.appendChild(ascii);
     }
     paintCode(dump.querySelectorAll('.o'));
     disassemble(buffer);
