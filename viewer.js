@@ -234,6 +234,11 @@ function openWasm(buffer) {
     disassemble(buffer);
 }
 
+function loadForURL(url) {
+    fetch(url).then(function (req) { return req.arrayBuffer(); })
+              .then(openWasm);
+}
+
 var wasmparser, wasmdis;
 requirejs.config({
   paths: {
@@ -245,4 +250,5 @@ requirejs(["WasmParser", "WasmDis"], function (wasmparser_, wasmdis_) {
     wasmparser = wasmparser_;
     wasmdis = wasmdis_;
     initialize();
+    loadForURL('./helloworld2.wasm');
 });
