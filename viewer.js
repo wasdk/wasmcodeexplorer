@@ -182,27 +182,42 @@ function paintCode(octets) {
       groupSpan.classList.add('lst');
       lastPosition = reader.position;
   }
+  // Formatting unprocessed/errored octets without coloring.
+  var groupSpan = null;
+  for (var i = lastPosition; i < octets.length; i++) {
+    var octet = octets[i];
+    if (!groupSpan || groupSpan.parentNode !== octet.parentNode) {
+        groupSpan = document.createElement('span');
+        groupSpan.className = 'grp';
+        octet.parentNode.insertBefore(groupSpan, octet);
+    }
+    groupSpan.appendChild(octet);
+  }
 }
 
 function disassemble(buffer) {
   var text = document.getElementById('text');
   text.textContent = '';
-  var reader = new wasmparser.BinaryReader();
-  reader.setData(content, 0, content.byteLength);
-  var dis = new wasmdis.WasmDisassembler();
-  dis.addOffsets = true;
-  var lines = dis.disassemble(reader).split('\n');
-  lines.forEach(function (s) {
-    var line = document.createElement('div');
-    line.className = 'line';
-    var offset;
-    line.textContent = s.replace(/\s;;\s@([0-9A-Fa-f]+)$/, function (all, n) {
-        offset = parseInt(n, 16);
-        return '';
+  try {
+    var reader = new wasmparser.BinaryReader();
+    reader.setData(content, 0, content.byteLength);
+    var dis = new wasmdis.WasmDisassembler();
+    dis.addOffsets = true;
+    var lines = dis.disassemble(reader).split('\n');
+    lines.forEach(function (s) {
+        var line = document.createElement('div');
+        line.className = 'line';
+        var offset;
+        line.textContent = s.replace(/\s;;\s@([0-9A-Fa-f]+)$/, function (all, n) {
+            offset = parseInt(n, 16);
+            return '';
+        });
+        line.dataset.offset = offset;
+        text.appendChild(line);
     });
-    line.dataset.offset = offset;
-    text.appendChild(line);
-  });
+  } catch (_) {
+    // ignoring error
+  }
 }
 
 function openWasm(buffer) {
