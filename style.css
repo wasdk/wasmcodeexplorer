@@ -25,6 +25,18 @@ body {
   line-height: 40px;
 }
 
+.toolbar > .title:before {
+  width: 40px;
+  height: 40px;
+  margin-top: -10px;
+  margin-bottom: -10px;
+  background-repeat: no-repeat;
+  background-image: url(bug1154731b.png);
+  background-size: 40px 40px;
+  display: inline-block;
+  content: '';
+}
+
 #openFile {
   flex: 0 0 100px;
   background-color: #212121;
