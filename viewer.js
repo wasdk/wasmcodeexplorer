@@ -209,11 +209,15 @@ function disassemble(buffer) {
         var line = document.createElement('div');
         line.className = 'line';
         var offset;
-        line.textContent = s.replace(/\s;;\s@([0-9A-Fa-f]+)$/, function (all, n) {
+        s = s.replace(/\s;;\s@([0-9A-Fa-f]+)$/, function (all, n) {
             offset = parseInt(n, 16);
             return '';
         });
-        line.dataset.offset = offset;
+        if (/^\s*[()]\s*$/.test(s))
+            offset = undefined; // ignoring offset for lines with only '(' and ')'
+        line.textContent = s;
+        if (offset)
+            line.dataset.offset = offset;
         text.appendChild(line);
     });
   } catch (_) {
