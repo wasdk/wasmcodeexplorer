@@ -26,13 +26,14 @@ body {
 }
 
 .toolbar > .title:before {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   margin-top: -10px;
   margin-bottom: -10px;
+  margin-right: 6px;
   background-repeat: no-repeat;
   background-image: url(bug1154731b.png);
-  background-size: 40px 40px;
+  background-size: 32px 32px;
   display: inline-block;
   content: '';
 }
@@ -65,7 +66,7 @@ body {
 .text {
   flex: 1 1 auto;
   overflow: auto;
-  border-left: 1px solid gray;
+  border-left: 4px solid #333333;
   white-space: pre;
   font-family: 'Roboto Mono', monospace;
   font-size: 12px;
@@ -87,8 +88,8 @@ body {
 }
 
 .dump .addresses {
-  flex: 0 0 100px;
-  background-color: #424242;
+  flex: 0 0 90px;
+  background-color: #282828;
 }
 
 .dump .asciis {
@@ -137,6 +138,12 @@ body {
   padding-left: 8px;
   padding-top: 2px;
   padding-bottom: 2px;
+  cursor: pointer;
+  border-left: 4px solid transparent;
+}
+
+.line:hover {
+  border-left: 4px solid #FFF176;
 }
 
 .dump .grp.c1 .o {
@@ -156,8 +163,8 @@ body {
 
 .dump .grp.c4 .o {
   color: black;
-  background-color: #DCE775;
-  border-right-color: #DCE775;
+  background-color: #FFB300;
+  border-right-color: #FFB300;
 }
 
 .dump .grp.c5 .o {
@@ -176,3 +183,8 @@ body {
   border-right-color: #616161;
 }
 
+.o:hover {
+  text-decoration: underline;
+  font-weight: bold;
+  cursor: pointer;
+}
