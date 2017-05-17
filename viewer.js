@@ -1,3 +1,5 @@
+var wasmparser = require('wasmparser');
+
 var colors;
 var annotators;
 function initialize() {
@@ -202,7 +204,7 @@ function disassemble(buffer) {
   try {
     var reader = new wasmparser.BinaryReader();
     reader.setData(content, 0, content.byteLength);
-    var dis = new wasmdis.WasmDisassembler();
+    var dis = new wasmparser.WasmDisassembler();
     dis.addOffsets = true;
     var lines = dis.disassemble(reader).split('\n');
     lines.forEach(function (s) {
@@ -268,16 +270,5 @@ function loadForURL(url) {
               .then(openWasm);
 }
 
-var wasmparser, wasmdis;
-requirejs.config({
-  paths: {
-    "WasmParser": "https://npmcdn.com/wasmparser@0.3.10/dist/WasmParser",
-    "WasmDis": "https://npmcdn.com/wasmparser@0.3.10/dist/WasmDis",
-  }
-});
-requirejs(["WasmParser", "WasmDis"], function (wasmparser_, wasmdis_) {
-    wasmparser = wasmparser_;
-    wasmdis = wasmdis_;
-    initialize();
-    loadForURL('./helloworld2.wasm');
-});
+initialize();
+loadForURL('./helloworld2.wasm');
