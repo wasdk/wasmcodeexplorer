@@ -271,8 +271,8 @@ function loadForURL(url) {
 var wasmparser, wasmdis;
 requirejs.config({
   paths: {
-    "WasmParser": "https://npmcdn.com/wasmparser/dist/WasmParser",
-    "WasmDis": "https://npmcdn.com/wasmparser/dist/WasmDis",
+    "WasmParser": "https://npmcdn.com/wasmparser@0.3.10/dist/WasmParser",
+    "WasmDis": "https://npmcdn.com/wasmparser@0.3.10/dist/WasmDis",
   }
 });
 requirejs(["WasmParser", "WasmDis"], function (wasmparser_, wasmdis_) {
