@@ -206,17 +206,20 @@ function disassemble(buffer) {
     reader.setData(content, 0, content.byteLength);
     var dis = new wasmparser.WasmDisassembler();
     dis.addOffsets = true;
-    var lines = dis.disassemble(reader).split('\n');
-    lines.forEach(function (s) {
+    var done = dis.disassembleChunk(reader);
+    var result = dis.getResult();
+    result.lines.forEach(function (s, index) {
         var line = document.createElement('div');
         line.className = 'line';
-        var offset;
-        s = s.replace(/\s;;\s@([0-9A-Fa-f]+)$/, function (all, n) {
-            offset = parseInt(n, 16);
-            return '';
-        });
-        if (/^\s*[()]\s*$/.test(s))
-            offset = undefined; // ignoring offset for lines with only '(' and ')'
+        var offset = result.offsets[index];
+
+        // ignoring offset for lines with only '(' and ')'
+        var i = 0, j = s.length - 1;
+        while (i < j && s[i] === ' ') i++;
+        while (i < j && s[j] === ' ') j++;
+        if (i === j && (s[i] === '(' || s[i] === ')'))
+            offset = undefined;
+
         line.textContent = s;
         if (offset)
             line.dataset.offset = offset;
