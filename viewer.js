@@ -274,4 +274,17 @@ function loadForURL(url) {
 }
 
 initialize();
-loadForURL('./helloworld2.wasm');
+
+if (/[?&]api=postmessage/.test(document.location.search)) {
+    (window.opener || window.parent).postMessage({
+        type: "wasmexplorer-ready"
+    }, "*");
+    window.addEventListener("message", function (e) {
+        if (e.data.type === "wasmexplorer-load") {
+            openWasm(e.data.data.buffer);
+        }
+    });
+    document.getElementById('openFile').hidden = true;
+} else {
+    loadForURL('./helloworld2.wasm');
+}
