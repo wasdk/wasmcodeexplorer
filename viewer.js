@@ -65,6 +65,22 @@ function initialize() {
       return JSON.stringify(wasmparser.bytesToString(result.field)) + '\n' +
              'Function Index: ' + result.index;
     };
+    annotators[wasmparser.BinaryReaderState.NAME_SECTION_ENTRY] = function (result) {
+        if (result.type != wasmparser.NameType.Function)  {
+            return "";
+        }
+        var names = result.names.slice(0, 20);
+        return names.map(function (n) {
+            return n.index + ": " + wasmparser.bytesToString(n.name);
+        }).join('\n') + (result.names.length > 20 ? '...' : '');
+    };
+    annotators[wasmparser.BinaryReaderState.DATA_SECTION_ENTRY_BODY] = function (result) {
+        return "";
+    };
+    annotators[wasmparser.BinaryReaderState.SECTION_RAW_DATA] = function (result) {
+        return "";
+    };
+
 }
 
 function flashOffset(offset, from) {
