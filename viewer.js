@@ -241,7 +241,8 @@ function paintOctets(dump, startRow, endRow) {
       }
       groupSpan.appendChild(octet);
       if (++groupIndex >= groupLength) {
-        item = octetColors[++j];
+        if (++j >= octetColors.length) break;
+        item = octetColors[j];
         groupIndex = 0;
         groupLength = item.length;
         groupSpan = null;
@@ -303,6 +304,8 @@ function buildColumns(dump, startRow, endRow) {
   }
 }
 
+var waitIcon = '\u00A0';
+
 function buildHexDump() {
   var dump = document.getElementById('dump');
   var addresses = dump.querySelector('.addresses');
@@ -320,23 +323,54 @@ function buildHexDump() {
     addresses.appendChild(address);
     var row = document.createElement('div');
     row.className = 'row';
-    row.textContent = '\u231B';
+    row.textContent = waitIcon;
     rows.appendChild(row);
     var ascii = document.createElement('div');
     ascii.className = 'ascii';
-    ascii.textContent = '\u231B';
+    ascii.textContent = waitIcon;
     asciis.appendChild(ascii);
   }
   return dump;
 }
+
+var updateViewTimeout = null;
+function updateView() {
+  if (updateViewTimeout)
+    clearTimeout(updateViewTimeout);
+  updateViewTimeout = setTimeout(function () {
+    updateViewTimeout = null;
+    var dump = document.getElementById('dump');
+    var existing = dump.querySelectorAll('.row > .grp:first-child');
+    if (existing.length > 1000) {
+      // purge cached rows
+      for (var q = 0; q < existing.length; q++) {
+        var p = existing[q];
+        do { p = p.parentNode; } while (p.className != 'row');
+        p.textContent = waitIcon;
+      }
+    }
+    // Find rows to display, assume all rows have the same height.
+    var rect = dump.getBoundingClientRect();
+    var rows = dump.querySelector('.rows');
+    var top = rows.firstChild.getBoundingClientRect().top;
+    var rowHeight =
+      (rows.lastChild.getBoundingClientRect().bottom - top) / rows.childNodes.length;
+    var start = Math.max(Math.floor((rect.top - top) / rowHeight), 0);
+    var end = Math.min(Math.ceil((rect.bottom - top) / rowHeight), rows.childNodes.length);
+    paintOctets(dump, start, end);
+  }, 100);
+}
+
+document.getElementById("dump").addEventListener("scroll", function (e) { updateView(); });
+window.addEventListener("resize", function (e) { updateView(); });
 
 function openWasm(buffer) {
   content = new Uint8Array(buffer);
   buildColors();
   disassemble();
 
-  var dump = buildHexDump();
-  paintOctets(dump, 0, dump.querySelector('.rows').childNodes.length);
+  buildHexDump();
+  updateView();
 }
 
 function loadForURL(url) {
