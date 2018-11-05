@@ -3,218 +3,254 @@ var wasmparser = require('wasmparser');
 var colors;
 var annotators;
 function initialize() {
-    var openButton = document.getElementById('openFile');
-    openButton.addEventListener('click', openButtonClicked);
-    var browseInput = document.getElementById('browseFile');
-    browseInput.addEventListener('change', browseInputChanged);
+  var openButton = document.getElementById('openFile');
+  openButton.addEventListener('click', openButtonClicked);
+  var browseInput = document.getElementById('browseFile');
+  browseInput.addEventListener('change', browseInputChanged);
 
-    var dumpRows = document.getElementById('dump').querySelector('.rows');
-    dumpRows.addEventListener('click', rowClicked);
-    var text = document.getElementById('text');
-    text.addEventListener('click', textClicked);
+  var dumpRows = document.getElementById('dump').querySelector('.rows');
+  dumpRows.addEventListener('click', rowClicked);
+  var text = document.getElementById('text');
+  text.addEventListener('click', textClicked);
 
-    colors = Object.create(null);
-    colors[wasmparser.BinaryReaderState.BEGIN_SECTION] = 1;
-    colors[wasmparser.BinaryReaderState.CODE_OPERATOR] = 2;
-    colors[wasmparser.BinaryReaderState.INIT_EXPRESSION_OPERATOR] = 2;
-    colors[wasmparser.BinaryReaderState.BEGIN_FUNCTION_BODY] = 3;
-    colors[wasmparser.BinaryReaderState.BEGIN_WASM] = 4;
-    colors[wasmparser.BinaryReaderState.EXPORT_SECTION_ENTRY] = 5;
-    colors[wasmparser.BinaryReaderState.IMPORT_SECTION_ENTRY] = 5;
-    colors[wasmparser.BinaryReaderState.TYPE_SECTION_ENTRY] = 5;
-    colors[wasmparser.BinaryReaderState.FUNCTION_SECTION_ENTRY] = 5;
-    colors[wasmparser.BinaryReaderState.GLOBAL_SECTION_ENTRY] = 6;
-    colors[wasmparser.BinaryReaderState.MEMORY_SECTION_ENTRY] = 6;
-    colors[wasmparser.BinaryReaderState.DATA_SECTION_ENTRY] = 6;
-    colors[wasmparser.BinaryReaderState.TABLE_SECTION_ENTRY] = 6;
-    colors[wasmparser.BinaryReaderState.ELEMENT_SECTION_ENTRY] = 6;
-    colors[wasmparser.BinaryReaderState.NAME_SECTION_ENTRY] = 7;
-    colors[wasmparser.BinaryReaderState.RELOC_SECTION_HEADER] = 3;
-    colors[wasmparser.BinaryReaderState.RELOC_SECTION_ENTRY] = 7;
+  colors = Object.create(null);
+  colors[wasmparser.BinaryReaderState.BEGIN_SECTION] = 1;
+  colors[wasmparser.BinaryReaderState.CODE_OPERATOR] = 2;
+  colors[wasmparser.BinaryReaderState.INIT_EXPRESSION_OPERATOR] = 2;
+  colors[wasmparser.BinaryReaderState.BEGIN_FUNCTION_BODY] = 3;
+  colors[wasmparser.BinaryReaderState.BEGIN_WASM] = 4;
+  colors[wasmparser.BinaryReaderState.EXPORT_SECTION_ENTRY] = 5;
+  colors[wasmparser.BinaryReaderState.IMPORT_SECTION_ENTRY] = 5;
+  colors[wasmparser.BinaryReaderState.TYPE_SECTION_ENTRY] = 5;
+  colors[wasmparser.BinaryReaderState.FUNCTION_SECTION_ENTRY] = 5;
+  colors[wasmparser.BinaryReaderState.GLOBAL_SECTION_ENTRY] = 6;
+  colors[wasmparser.BinaryReaderState.MEMORY_SECTION_ENTRY] = 6;
+  colors[wasmparser.BinaryReaderState.DATA_SECTION_ENTRY] = 6;
+  colors[wasmparser.BinaryReaderState.TABLE_SECTION_ENTRY] = 6;
+  colors[wasmparser.BinaryReaderState.ELEMENT_SECTION_ENTRY] = 6;
+  colors[wasmparser.BinaryReaderState.NAME_SECTION_ENTRY] = 7;
+  colors[wasmparser.BinaryReaderState.RELOC_SECTION_HEADER] = 3;
+  colors[wasmparser.BinaryReaderState.RELOC_SECTION_ENTRY] = 7;
 
-    annotators = Object.create(null);
-    annotators[wasmparser.BinaryReaderState.BEGIN_SECTION] = function (result) {
-      return 'ID: ' + wasmparser.SectionCode[result.id] +
-             (result.name ? '\nName: ' + wasmparser.bytesToString(result.name) : '');
-    };
-    annotators[wasmparser.BinaryReaderState.INIT_EXPRESSION_OPERATOR] =
+  annotators = Object.create(null);
+  annotators[wasmparser.BinaryReaderState.BEGIN_SECTION] = function (result) {
+    return 'ID: ' + wasmparser.SectionCode[result.id] +
+      (result.name ? '\nName: ' + wasmparser.bytesToString(result.name) : '');
+  };
+  annotators[wasmparser.BinaryReaderState.INIT_EXPRESSION_OPERATOR] =
     annotators[wasmparser.BinaryReaderState.CODE_OPERATOR] = function (result) {
       return 'Operator: ' + wasmparser.OperatorCode[result.code] + '\n' +
-             JSON.stringify(result);
+        JSON.stringify(result);
     };
-    annotators[wasmparser.BinaryReaderState.TYPE_SECTION_ENTRY] = function (result) {
-      if (result.form != wasmparser.Type.func) {
-          return defaultAnnotator(result);
-      }
-      var am = Array.prototype.map;
-      return '(' + am.call(result.params, formatType).join(',') + ') : (' +
-             am.call(result.returns, formatType).join(',') + ')';
-    };
-    annotators[wasmparser.BinaryReaderState.IMPORT_SECTION_ENTRY] = function (result) {
-      if (result.kind != wasmparser.ExternalKind.Function) {
-          return defaultAnnotator(result);
-      }
-      return JSON.stringify(wasmparser.bytesToString(result.module)) + ' ' +
-             JSON.stringify(wasmparser.bytesToString(result.field)) + '\n' +
-             'Type Index: ' + result.funcTypeIndex;
-    };
-    annotators[wasmparser.BinaryReaderState.EXPORT_SECTION_ENTRY] = function (result) {
-      if (result.kind != wasmparser.ExternalKind.Function) {
-          return defaultAnnotator(result);
-      }
-      return JSON.stringify(wasmparser.bytesToString(result.field)) + '\n' +
-             'Function Index: ' + result.index;
-    };
-    annotators[wasmparser.BinaryReaderState.NAME_SECTION_ENTRY] = function (result) {
-        if (result.type != wasmparser.NameType.Function)  {
-            return "";
-        }
-        var names = result.names.slice(0, 20);
-        return names.map(function (n) {
-            return n.index + ": " + wasmparser.bytesToString(n.name);
-        }).join('\n') + (result.names.length > 20 ? '...' : '');
-    };
-    annotators[wasmparser.BinaryReaderState.DATA_SECTION_ENTRY_BODY] = function (result) {
-        return "";
-    };
-    annotators[wasmparser.BinaryReaderState.SECTION_RAW_DATA] = function (result) {
-        return "";
-    };
+  annotators[wasmparser.BinaryReaderState.TYPE_SECTION_ENTRY] = function (result) {
+    if (result.form != wasmparser.Type.func) {
+      return defaultAnnotator(result);
+    }
+    var am = Array.prototype.map;
+    return '(' + am.call(result.params, formatType).join(',') + ') : (' +
+      am.call(result.returns, formatType).join(',') + ')';
+  };
+  annotators[wasmparser.BinaryReaderState.IMPORT_SECTION_ENTRY] = function (result) {
+    if (result.kind != wasmparser.ExternalKind.Function) {
+      return defaultAnnotator(result);
+    }
+    return JSON.stringify(wasmparser.bytesToString(result.module)) + ' ' +
+      JSON.stringify(wasmparser.bytesToString(result.field)) + '\n' +
+      'Type Index: ' + result.funcTypeIndex;
+  };
+  annotators[wasmparser.BinaryReaderState.EXPORT_SECTION_ENTRY] = function (result) {
+    if (result.kind != wasmparser.ExternalKind.Function) {
+      return defaultAnnotator(result);
+    }
+    return JSON.stringify(wasmparser.bytesToString(result.field)) + '\n' +
+      'Function Index: ' + result.index;
+  };
+  annotators[wasmparser.BinaryReaderState.NAME_SECTION_ENTRY] = function (result) {
+    if (result.type != wasmparser.NameType.Function) {
+      return "";
+    }
+    var names = result.names.slice(0, 20);
+    return names.map(function (n) {
+      return n.index + ": " + wasmparser.bytesToString(n.name);
+    }).join('\n') + (result.names.length > 20 ? '...' : '');
+  };
+  annotators[wasmparser.BinaryReaderState.DATA_SECTION_ENTRY_BODY] = function (result) {
+    return "";
+  };
+  annotators[wasmparser.BinaryReaderState.SECTION_RAW_DATA] = function (result) {
+    return "";
+  };
 
 }
 
 function flashOffset(offset, from) {
-    var oldSelection = document.querySelectorAll(".selected");
-    for (var i = 0; i < oldSelection.length; i++)
-        oldSelection[i].classList.remove('selected');
+  var oldSelection = document.querySelectorAll(".selected");
+  for (var i = 0; i < oldSelection.length; i++)
+    oldSelection[i].classList.remove('selected');
 
-    if (!offset)
-        return;
+  if (!offset)
+    return;
 
-    var line = document.querySelector(".line[data-offset = '" + offset + "']");
-    if (line) {
-        if (from === 'grp')
-            line.scrollIntoView();
-        line.classList.add('selected');
-    }
+  var line = document.querySelector(".line[data-offset = '" + offset + "']");
+  if (line) {
+    if (from === 'grp')
+      line.scrollIntoView();
+    line.classList.add('selected');
+  }
 
-    var grps = document.querySelectorAll(".grp[data-offset = '" + offset + "']");
-    if (grps.length > 0 && from === 'line')
-        grps[0].scrollIntoView();
-    for (var i = 0; i < grps.length; i++)
-        grps[i].classList.add('selected');
+  var grps = document.querySelectorAll(".grp[data-offset = '" + offset + "']");
+  if (grps.length > 0 && from === 'line')
+    grps[0].scrollIntoView();
+  for (var i = 0; i < grps.length; i++)
+    grps[i].classList.add('selected');
 }
 
 function rowClicked(e) {
-    var t = e.target;
-    while (t !== document.body && !t.classList.contains('grp'))
-        t = t.parentNode;
-    if (t === document.body)
-        return;
-    var offset = t.dataset.offset;
-    flashOffset(offset, 'grp');
+  var t = e.target;
+  while (t !== document.body && !t.classList.contains('grp'))
+    t = t.parentNode;
+  if (t === document.body)
+    return;
+  var offset = t.dataset.offset;
+  flashOffset(offset, 'grp');
 }
 
 function textClicked(e) {
-    var t = e.target;
-    while (t !== document.body && !t.classList.contains('line'))
-        t = t.parentNode;
-    if (t === document.body)
-        return;
-    var offset = t.dataset.offset;
-    flashOffset(offset, 'line');
+  var t = e.target;
+  while (t !== document.body && !t.classList.contains('line'))
+    t = t.parentNode;
+  if (t === document.body)
+    return;
+  var offset = t.dataset.offset;
+  flashOffset(offset, 'line');
 }
 
 function defaultAnnotator(result) {
-    var s = JSON.stringify(result, null, 2);
-    if (s.length <= 1024)
-        return s;
-    return s.substring(0, 1024) + '...';
+  var s = JSON.stringify(result, null, 2);
+  if (s.length <= 1024)
+    return s;
+  return s.substring(0, 1024) + '...';
 }
 
 function formatType(type) {
-    return wasmparser.Type[type];
+  return wasmparser.Type[type];
 }
 
 function openButtonClicked(e) {
-    var browseInput = document.getElementById('browseFile');
-    browseInput.click();
+  var browseInput = document.getElementById('browseFile');
+  browseInput.click();
 }
 
 function browseInputChanged(e) {
-    var browseInput = document.getElementById('browseFile');
-    var file = browseInput.files[0];
-    var fileReader = new FileReader();
-    fileReader.onload = function (evt) {
-        var buffer = evt.target.result;
-        openWasm(buffer);
-    };
-    fileReader.readAsArrayBuffer(file);    
+  var browseInput = document.getElementById('browseFile');
+  var file = browseInput.files[0];
+  var fileReader = new FileReader();
+  fileReader.onload = function (evt) {
+    var buffer = evt.target.result;
+    openWasm(buffer);
+  };
+  fileReader.readAsArrayBuffer(file);
 }
 
 var perRow = 0x10;
 var content;
 
 function toHex(n, width) {
-    var s = n.toString(16).toUpperCase();
-    while (s.length < width)
-        s = '0' + s;
-    return s;
+  var s = n.toString(16).toUpperCase();
+  while (s.length < width)
+    s = '0' + s;
+  return s;
 }
 
 function annotate(state, result, position) {
-    var info = [];
-    info.push('Type: ' + wasmparser.BinaryReaderState[state] +
-              ' @' + toHex(position, 8));
-    if (annotators[state]) {
-        info.push(annotators[state].call(null, result));
-    } else if (result) {
-        info.push(defaultAnnotator(result));
-    }
-    return info.join('\n');
+  var info = [];
+  info.push('Type: ' + wasmparser.BinaryReaderState[state] +
+    ' @' + toHex(position, 8));
+  if (annotators[state]) {
+    info.push(annotators[state].call(null, result));
+  } else if (result) {
+    info.push(defaultAnnotator(result));
+  }
+  return info.join('\n');
 }
 
-function paintCode(octets) {
+var octetColors = [];
+
+function buildColors() {
   var reader = new wasmparser.BinaryReader();
   reader.setData(content, 0, content.byteLength);
   var lastPosition = reader.position;
+  octetColors.length = 0;
   while (reader.read() && reader.state >= 0) {
-      var color = colors[reader.state];
-      var groupLength = reader.position - lastPosition;
-      if (groupLength == 0) {
-          continue;
-      }
-      var groupSpan = null;
-      for (var i = 0; i < groupLength; i++) {
-          var octet = octets[lastPosition + i];
-          if (!groupSpan || groupSpan.parentNode !== octet.parentNode) {
-              groupSpan = document.createElement('span');
-              groupSpan.className = 'grp';
-              if (color)
-                  groupSpan.classList.add('c' + color);
-              octet.parentNode.insertBefore(groupSpan, octet);
-          }
-          groupSpan.appendChild(octet);
-          groupSpan.title = annotate(reader.state, reader.result, lastPosition);
-          groupSpan.dataset.offset = lastPosition;
-      }
-      groupSpan.classList.add('lst');
-      lastPosition = reader.position;
+    if (reader.position <= lastPosition)
+      continue;
+    octetColors.push({
+      offset: lastPosition,
+      length: reader.position - lastPosition,
+      color: colors[reader.state],
+      title: annotate(reader.state, reader.result, lastPosition),
+    });
+    lastPosition = reader.position;
   }
-  // Formatting unprocessed/errored octets without coloring.
-  var groupSpan = null;
-  for (var i = lastPosition; i < octets.length; i++) {
-    var octet = octets[i];
-    if (!groupSpan || groupSpan.parentNode !== octet.parentNode) {
-        groupSpan = document.createElement('span');
-        groupSpan.className = 'grp';
-        octet.parentNode.insertBefore(groupSpan, octet);
-    }
-    groupSpan.appendChild(octet);
+  if (lastPosition < reader.position) {
+    octetColors.push({
+      offset: lastPosition,
+      length: content.byteLength - lastPosition,
+      color: undefined,
+      title: reader.state < 0 ? reader.error.message : undefined,
+    });
   }
 }
 
-function disassemble(buffer) {
+function searchOctetColor(octetIndex, roundUp) {
+  var i = 0;
+  while (i < octetColors.length) {
+    if (octetIndex < octetColors[i].offset + octetColors[i].length) {
+      return roundUp ? i + 1 : i;
+    }
+    i++;
+  }
+  return i;
+}
+
+function paintOctets(dump, startRow, endRow) {
+  buildColumns(dump, startRow, endRow);
+  var rows = dump.querySelectorAll('.rows > .row');
+  var j = searchOctetColor(startRow * perRow, false);
+
+  var item = octetColors[j];
+  var groupIndex = startRow * perRow - item.offset;
+  var groupLength = item.length;
+
+  for (var r = startRow; r < endRow; r++) {
+    var groupSpan = null;
+    var octets = rows[r].querySelectorAll('.o');
+    var itemsCount = Math.min(content.length - r * perRow, perRow);
+    for (var i = 0; i < itemsCount; i++) {
+      var octet = octets[i];
+      if (!groupSpan || groupSpan.parentNode !== octet.parentNode) {
+        groupSpan = document.createElement('span');
+        groupSpan.className = 'grp';
+        if (item.color)
+          groupSpan.classList.add('c' + item.color);
+        octet.parentNode.insertBefore(groupSpan, octet);
+        if (item.title)
+          groupSpan.title = item.title;
+        groupSpan.dataset.offset = item.offset;
+        groupSpan.classList.add('lst');
+      }
+      groupSpan.appendChild(octet);
+      if (++groupIndex >= groupLength) {
+        item = octetColors[++j];
+        groupIndex = 0;
+        groupLength = item.length;
+        groupSpan = null;
+      }
+    }
+  }
+}
+
+function disassemble() {
   var text = document.getElementById('text');
   text.textContent = '';
   try {
@@ -225,82 +261,101 @@ function disassemble(buffer) {
     var done = dis.disassembleChunk(reader);
     var result = dis.getResult();
     result.lines.forEach(function (s, index) {
-        var line = document.createElement('div');
-        line.className = 'line';
-        var offset = result.offsets[index];
+      var line = document.createElement('div');
+      line.className = 'line';
+      var offset = result.offsets[index];
 
-        // ignoring offset for lines with only '(' and ')'
-        var i = 0, j = s.length - 1;
-        while (i < j && s[i] === ' ') i++;
-        while (i < j && s[j] === ' ') j++;
-        if (i === j && (s[i] === '(' || s[i] === ')'))
-            offset = undefined;
+      // ignoring offset for lines with only '(' and ')'
+      var i = 0, j = s.length - 1;
+      while (i < j && s[i] === ' ') i++;
+      while (i < j && s[j] === ' ') j++;
+      if (i === j && (s[i] === '(' || s[i] === ')'))
+        offset = undefined;
 
-        line.textContent = s;
-        if (offset)
-            line.dataset.offset = offset;
-        text.appendChild(line);
+      line.textContent = s;
+      if (offset)
+        line.dataset.offset = offset;
+      text.appendChild(line);
     });
   } catch (_) {
     // ignoring error
   }
 }
 
-function openWasm(buffer) {
-    var dump = document.getElementById('dump');
-    var addresses = dump.querySelector('.addresses');
-    addresses.textContent = '';
-    var rows = dump.querySelector('.rows');
-    rows.textContent = '';
-    var asciis = dump.querySelector('.asciis');
-    asciis.textContent = '';
-    content = new Uint8Array(buffer);
-    var rowCount = Math.max(1, Math.ceil(content.length / perRow));
-    for (var i = 0; i < rowCount; i++) {
-        var row = document.createElement('div');
-        row.className = 'row';
-        var address = document.createElement('div');
-        address.className = 'address';
-        var rowOffset = i * perRow;
-        address.textContent = "0x" + toHex(rowOffset, 8);
-        addresses.appendChild(address);
-        var itemsCount = Math.min(content.length - rowOffset, perRow);
-        var str = '';
-        for (var j = 0; j < itemsCount; j++) {
-            var b = content[rowOffset + j];
-            var octet = document.createElement('span');
-            octet.className = 'o';
-            octet.textContent = toHex(b, 2);
-            row.appendChild(octet);
-            str += b >= 32 && b < 127 ? String.fromCharCode(b) : '.';
-        }
-        rows.appendChild(row);
-        var ascii = document.createElement('div');
-        ascii.className = 'ascii';
-        ascii.textContent = str;
-        asciis.appendChild(ascii);
+function buildColumns(dump, startRow, endRow) {
+  var rows = dump.querySelectorAll('.rows > .row');
+  var asciis = dump.querySelectorAll('.asciis > .ascii');
+  for (var i = startRow; i < endRow; i++) {
+    var rowOffset = i * perRow;
+    var itemsCount = Math.min(content.length - rowOffset, perRow);
+    var row = rows[i];
+    row.textContent = '';
+    var str = '';
+    for (var j = 0; j < itemsCount; j++) {
+      var b = content[rowOffset + j];
+      var octet = document.createElement('span');
+      octet.className = 'o';
+      octet.textContent = toHex(b, 2);
+      row.appendChild(octet);
+      str += b >= 32 && b < 127 ? String.fromCharCode(b) : '.';
     }
-    paintCode(dump.querySelectorAll('.o'));
-    disassemble(buffer);
+    asciis[i].textContent = str;
+  }
+}
+
+function buildHexDump() {
+  var dump = document.getElementById('dump');
+  var addresses = dump.querySelector('.addresses');
+  addresses.textContent = '';
+  var rows = dump.querySelector('.rows');
+  rows.textContent = '';
+  var asciis = dump.querySelector('.asciis');
+  asciis.textContent = '';
+  var rowCount = Math.max(1, Math.ceil(content.length / perRow));
+  for (var i = 0; i < rowCount; i++) {
+    var address = document.createElement('div');
+    address.className = 'address';
+    var rowOffset = i * perRow;
+    address.textContent = "0x" + toHex(rowOffset, 8);
+    addresses.appendChild(address);
+    var row = document.createElement('div');
+    row.className = 'row';
+    row.textContent = '\u231B';
+    rows.appendChild(row);
+    var ascii = document.createElement('div');
+    ascii.className = 'ascii';
+    ascii.textContent = '\u231B';
+    asciis.appendChild(ascii);
+  }
+  return dump;
+}
+
+function openWasm(buffer) {
+  content = new Uint8Array(buffer);
+  buildColors();
+  disassemble();
+
+  var dump = buildHexDump();
+  paintOctets(dump, 0, dump.querySelector('.rows').childNodes.length);
 }
 
 function loadForURL(url) {
-    fetch(url).then(function (req) { return req.arrayBuffer(); })
-              .then(openWasm);
+  fetch(url).then(function (req) { return req.arrayBuffer(); })
+    .then(openWasm);
 }
 
 initialize();
 
 if (/[?&]api=postmessage/.test(document.location.search)) {
-    (window.opener || window.parent).postMessage({
-        type: "wasmexplorer-ready"
-    }, "*");
-    window.addEventListener("message", function (e) {
-        if (e.data.type === "wasmexplorer-load") {
-            openWasm(e.data.data.buffer);
-        }
-    });
-    document.getElementById('openFile').hidden = true;
+  (window.opener || window.parent).postMessage({
+    type: "wasmexplorer-ready"
+  }, "*");
+  window.addEventListener("message", function (e) {
+    if (e.data.type === "wasmexplorer-load") {
+      openWasm(e.data.data.buffer);
+    }
+  });
+  document.getElementById('openFile').hidden = true;
 } else {
-    loadForURL('./helloworld2.wasm');
+  loadForURL('./helloworld2.wasm');
 }
