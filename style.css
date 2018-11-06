@@ -188,3 +188,8 @@ body {
   font-weight: bold;
   cursor: pointer;
 }
+
+.source-line {
+  font-style: italic;
+  color: gray;
+}

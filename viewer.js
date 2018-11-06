@@ -1,4 +1,5 @@
 var wasmparser = require('wasmparser');
+var sourceMapUtils = require('./source-map-utils.js');
 
 var colors;
 var annotators;
@@ -98,6 +99,7 @@ function flashOffset(offset, from) {
     line.classList.add('selected');
   }
 
+  // FIXME
   var grps = document.querySelectorAll(".grp[data-offset = '" + offset + "']");
   if (grps.length > 0 && from === 'line')
     grps[0].scrollIntoView();
@@ -147,7 +149,11 @@ function browseInputChanged(e) {
   var fileReader = new FileReader();
   fileReader.onload = function (evt) {
     var buffer = evt.target.result;
-    openWasm(buffer);
+    var header = new Uint8Array(buffer, 0, 4);
+    if (header[0] == 0 && header[1] == 0x61 && header[2] == 0x73 && header[3] == 0x6D)
+      openWasm(buffer);
+    else
+      sourceMapUtils.openMapOrSourceFile(buffer, file.name);
   };
   fileReader.readAsArrayBuffer(file);
 }
@@ -366,8 +372,10 @@ window.addEventListener("resize", function (e) { updateView(); });
 
 function openWasm(buffer) {
   content = new Uint8Array(buffer);
+  sourceMap = null;
   buildColors();
   disassemble();
+  sourceMapUtils.checkAndLoadDWARF(content);
 
   buildHexDump();
   updateView();
