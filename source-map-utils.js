@@ -1,4 +1,5 @@
 var wasmparser = require('wasmparser');
+var Heap = require('./heap.js').Heap;
 
 var spaces = " ";
 function getPadding(len) {
@@ -63,43 +64,41 @@ function displaySources() {
   });
   if (sourceMapContext.variables) {
     lineIndex = 0;
-    var deletedVars = {};
+    var deletedVars = new Heap(function (x,y) {
+      return x.offset < y.offset ? -1 : x.offset > y.offset ? 1 : 0;
+    });
     sourceMapContext.variables.forEach(function (v) {
       while (lineIndex < lines.length && lineOffsets[lineIndex] < v.start) {
-        // FIXME missing some ends/del due to not-precise v.end
-        if (deletedVars[lineOffsets[lineIndex]]) {
-          var vars = Object.keys(deletedVars[lineOffsets[lineIndex]]);
-          if (vars.length > 0) {
-            var varsSuffix = document.createElement('span');
-            varsSuffix.className = "source-var";
-            varsSuffix.textContent = 'del ' + vars.join(',');
-            lines[lineIndex].append(varsSuffix);
-          }
-          delete deletedVars[lineOffsets[lineIndex]];
+        if (deletedVars.length > 0 && deletedVars.top.offset <= lineOffsets[lineIndex]) {
+          var endVars = [];
+          do {
+            endVars.push(deletedVars.pop().name);
+          } while (deletedVars.length > 0 && deletedVars.top.offset <= lineOffsets[lineIndex]);
+          var varsSuffix = document.createElement('span');
+          varsSuffix.className = "source-var";
+          varsSuffix.textContent = '~' + endVars.join(',');
+          lines[lineIndex].append(varsSuffix);
         }
         lineIndex++;
       }
-      if (lineIndex >= lines.length) // FIXME error if we missed address
-        return;
-      var varsSuffix = document.createElement('span');
-      varsSuffix.className = "source-var";
-      varsSuffix.textContent = v.name + '=' + v.location;
-      lines[lineIndex].append(varsSuffix);
-      if (deletedVars[v.start])
-        delete deletedVars[v.start][v.name];
-      var delVars = deletedVars[v.end] || (deletedVars[v.end] = Object.create(null));
-      delVars[v.name] = true;
+      if (lineIndex < lines.length) {// FIXME error if we missed address
+        var varsSuffix = document.createElement('span');
+        varsSuffix.className = "source-var";
+        varsSuffix.textContent = v.name + '=' + v.location;
+        lines[lineIndex].append(varsSuffix);
+        deletedVars.insert({offset: v.end, name: v.name});
+      }
     });
-    while (lineIndex < lines.length) {
-      if (deletedVars[lineOffsets[lineIndex]]) {
-        var vars = Object.keys(deletedVars[lineOffsets[lineIndex]]);
-        if (vars.length > 0) {
-          var varsSuffix = document.createElement('span');
-          varsSuffix.className = "source-var";
-          varsSuffix.textContent = 'del ' + vars.join(',');
-          lines[lineIndex].append(varsSuffix);
-        }
-        delete deletedVars[lineOffsets[lineIndex]];
+    while (lineIndex < lines.length && deletedVars.length > 0) {
+      if (deletedVars.top.offset <= lineOffsets[lineIndex]) {
+        var endVars = [];
+        do {
+          endVars.push(deletedVars.pop().name);
+        } while (deletedVars.length > 0 && deletedVars.top.offset <= lineOffsets[lineIndex]);
+        var varsSuffix = document.createElement('span');
+        varsSuffix.className = "source-var";
+        varsSuffix.textContent = '~' + endVars.join(',');
+        lines[lineIndex].append(varsSuffix);
       }
       lineIndex++;
     }
