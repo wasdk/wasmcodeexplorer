@@ -21,11 +21,16 @@ function displaySources() {
     return +line.getAttribute('data-offset');
   });
   var lineIndex = 0;
+  var lastLineKey = "";
   sourceMapContext.map.forEach(function (item) {
     while (lineIndex < lines.length && lineOffsets[lineIndex] < item.offset)
       lineIndex++;
     if (lineIndex >= lines.length || lineOffsets[lineIndex] > item.offset)
       return;
+    var lineKey = item.file + ',' + item.line;
+    if (lastLineKey == lineKey)
+      return;
+    lastLineKey = lineKey;
     var sourceLine = document.createElement('div');
     sourceLine.className = 'source-line';
     var text = sourceMapContext.sources[item.file] + ':' + item.line;
@@ -35,13 +40,15 @@ function displaySources() {
       text += sourceMapContext.contents[item.file][item.line - 1];
       if (!usedLines[item.file][item.line + 1]) {
         var prefix = getPadding(prefixLen);
-        var i;
+        var i, lineText;
         for (i = 0; i < 3 && !usedLines[item.file][item.line + i + 1]; i++) {
-          text += '\n' + prefix;
-          text += sourceMapContext.contents[item.file][item.line + i];
+          lineText = sourceMapContext.contents[item.file][item.line + i];
+          if (typeof lineText == 'undefined') break;
+          text += '\n' + prefix + lineText;
           usedLines[item.file][item.line + i + 1] = true;
         }
-        if (!usedLines[item.file][item.line + i + 1])
+        if (typeof lineText != 'undefined' &&
+            !usedLines[item.file][item.line + i + 1])
           text += '\n' + prefix + '...';
       }
     }
@@ -100,7 +107,6 @@ function updateSourceMapView() {
         file: buf[1],
         line: buf[2] + 1,
       };
-      acc.push(mapping);
     } else {
       var last = acc[acc.length - 1];
       mapping = {
@@ -108,9 +114,8 @@ function updateSourceMapView() {
         file: last.file + (buf.length > 1 ? buf[1] : 0),
         line: last.line + (buf.length > 1 ? buf[2] : 0),
       };
-      if (last.file != mapping.file || last.line != mapping.line)
-        acc.push(mapping);
     };
+    acc.push(mapping);
     return acc;
   }, [])
   map.sort(function (a, b) { return a.offset - b.offset; });
