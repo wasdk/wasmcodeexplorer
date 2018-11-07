@@ -193,3 +193,14 @@ body {
   font-style: italic;
   color: gray;
 }
+
+.source-var {
+  color: darkcyan;
+  background-color: rgba(33,33,33,0.3);
+  display: inline-block;
+  border: 1px solid darkcyan;
+  border-radius: 3px;
+  margin: 0px 5px;
+  position: relative;
+  top: -10px;
+}
