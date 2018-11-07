@@ -211,7 +211,8 @@ function buildColors() {
 function searchOctetColor(octetIndex, roundUp) {
   var i = 0;
   while (i < octetColors.length) {
-    if (octetIndex < octetColors[i].offset + octetColors[i].length) {
+    if (octetColors[i].offset <= octetIndex &&
+        octetIndex < octetColors[i].offset + octetColors[i].length) {
       return roundUp ? i + 1 : i;
     }
     i++;
