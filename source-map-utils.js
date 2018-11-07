@@ -28,7 +28,7 @@ function displaySources() {
       return;
     var sourceLine = document.createElement('div');
     sourceLine.className = 'source-line';
-    var text = `${sourceMapContext.sources[item.file]}:${item.line}`;
+    var text = sourceMapContext.sources[item.file] + ':' + item.line;
     if (sourceMapContext.contents[item.file]) {
       text += " \u21e8 ";
       var prefixLen = text.length;
@@ -157,7 +157,7 @@ function checkAndLoadDWARF(content) {
   }
   if (!debugInfoFound) return;
   if (!dwarfToJSONInstance) {
-    var dwarfToJSONPath = 'https://unpkg.com/dwarf-to-json@0.1.3/dwarf_to_json.wasm';
+    var dwarfToJSONPath = 'https://unpkg.com/dwarf-to-json@0.1.4/dwarf_to_json.wasm';
     dwarfToJSONInstance = WebAssembly.instantiateStreaming(fetch(dwarfToJSONPath)).then(
       function (res) { return res.instance; }
     );
@@ -172,7 +172,7 @@ function checkAndLoadDWARF(content) {
     var wasmPtr = alloc_mem(content.byteLength);
     new Uint8Array(memory.buffer, wasmPtr, content.byteLength).set(content);
     var resultPtr = alloc_mem(12);
-    convert_dwarf(wasmPtr, content.byteLength, resultPtr, resultPtr + 4);
+    convert_dwarf(wasmPtr, content.byteLength, resultPtr, resultPtr + 4, true);
     free_mem(wasmPtr);
     var resultView = new DataView(memory.buffer, resultPtr, 12);
     var outputPtr = resultView.getUint32(0, true), outputLen = resultView.getUint32(4, true);

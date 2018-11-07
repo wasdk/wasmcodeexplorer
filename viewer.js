@@ -99,7 +99,7 @@ function flashOffset(offset, from) {
     line.classList.add('selected');
   }
 
-  // FIXME
+  // FIXME not flashing when no octets rendered
   var grps = document.querySelectorAll(".grp[data-offset = '" + offset + "']");
   if (grps.length > 0 && from === 'line')
     grps[0].scrollIntoView();
@@ -229,6 +229,7 @@ function paintOctets(dump, startRow, endRow) {
   var groupLength = item.length;
 
   for (var r = startRow; r < endRow; r++) {
+    if (rows[r].querySelector('.grp')) continue;
     var groupSpan = null;
     var octets = rows[r].querySelectorAll('.o');
     var itemsCount = Math.min(content.length - r * perRow, perRow);
@@ -293,9 +294,10 @@ function buildColumns(dump, startRow, endRow) {
   var rows = dump.querySelectorAll('.rows > .row');
   var asciis = dump.querySelectorAll('.asciis > .ascii');
   for (var i = startRow; i < endRow; i++) {
+    var row = rows[i];
+    if (row.querySelector('.o')) continue;
     var rowOffset = i * perRow;
     var itemsCount = Math.min(content.length - rowOffset, perRow);
-    var row = rows[i];
     row.textContent = '';
     var str = '';
     for (var j = 0; j < itemsCount; j++) {
