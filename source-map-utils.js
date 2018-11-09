@@ -187,7 +187,8 @@ function decodeExpr(expr) {
       case 0x9F: // DW_OP_stack_value
         return "" + stack.pop();
 
-      case 0xF6: // WASM ext
+      case 0xF6: // WASM ext (old) // FIXME phase out
+      case 0xED: // WASM ext
         b = readU(); a = readS();
         switch (b) {
           case 0:
