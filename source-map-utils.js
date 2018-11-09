@@ -324,7 +324,7 @@ function checkAndLoadDWARF(content) {
   }
   if (!debugInfoFound) return;
   if (!dwarfToJSONInstance) {
-    var dwarfToJSONPath = 'https://unpkg.com/dwarf-to-json@0.1.4/dwarf_to_json.wasm';
+    var dwarfToJSONPath = 'https://unpkg.com/dwarf-to-json@0.1.5/dwarf_to_json.wasm';
     dwarfToJSONInstance = WebAssembly.instantiateStreaming(fetch(dwarfToJSONPath)).then(
       function (res) { return res.instance; }
     );
