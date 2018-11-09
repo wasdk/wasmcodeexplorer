@@ -118,6 +118,9 @@ function openMapOrSourceFile(buffer, name) {
 }
 
 function decodeExpr(expr) {
+  if (expr.includes("//")) {
+    expr = expr.split(/\s*\/\//)[0];
+  }
   var buf = new Uint8Array(expr.length >> 1);
   for (var i = 0; i < expr.length; i += 2)
     buf[i >> 1] = parseInt(expr.substr(i, 2), 16);
