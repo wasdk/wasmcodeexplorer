@@ -101,6 +101,15 @@ function flashOffset(offset, from) {
 
   // FIXME not flashing when no octets rendered
   var grps = document.querySelectorAll(".grp[data-offset = '" + offset + "']");
+  if (grps.length === 0) {
+    // rows are not cached
+    var row = document.querySelector(".row:nth-child(" + Math.floor(offset / perRow) + ")");
+    if (row) {
+      row.scrollIntoView();
+      updateView();
+      grps = document.querySelectorAll(".grp[data-offset = '" + offset + "']");
+    }
+  }
   if (grps.length > 0 && from === 'line')
     grps[0].scrollIntoView();
   for (var i = 0; i < grps.length; i++)
@@ -208,12 +217,12 @@ function buildColors() {
   }
 }
 
-function searchOctetColor(octetIndex, roundUp) {
+function searchOctetColor(octetIndex) {
   var i = 0;
   while (i < octetColors.length) {
     if (octetColors[i].offset <= octetIndex &&
         octetIndex < octetColors[i].offset + octetColors[i].length) {
-      return roundUp ? i + 1 : i;
+      return i;
     }
     i++;
   }
@@ -222,17 +231,26 @@ function searchOctetColor(octetIndex, roundUp) {
 
 function paintOctets(dump, startRow, endRow) {
   buildColumns(dump, startRow, endRow);
-  var rows = dump.querySelectorAll('.rows > .row');
-  var j = searchOctetColor(startRow * perRow, false);
+  var currentRow = dump.querySelector('.row:nth-child(' + (startRow + 1) + ')');
+  var j = searchOctetColor(startRow * perRow);
 
   var item = octetColors[j];
   var groupIndex = startRow * perRow - item.offset;
   var groupLength = item.length;
 
-  for (var r = startRow; r < endRow; r++) {
-    if (rows[r].querySelector('.grp')) continue;
+  for (var r = startRow; r < endRow; r++, currentRow = currentRow.nextSibling) {
+    if (currentRow.querySelector('.grp')) {
+      for (var skip = perRow; skip >= groupLength - groupIndex;) {
+        skip -= groupLength - groupIndex;
+        if (++j >= octetColors.length) break;
+        groupIndex = 0;
+        groupLength = octetColors[j].length; 
+      }
+      groupIndex += skip;
+      continue;
+    }
     var groupSpan = null;
-    var octets = rows[r].querySelectorAll('.o');
+    var octets = currentRow.querySelectorAll('.o');
     var itemsCount = Math.min(content.length - r * perRow, perRow);
     for (var i = 0; i < itemsCount; i++) {
       var octet = octets[i];
@@ -343,34 +361,38 @@ function buildHexDump() {
 }
 
 var updateViewTimeout = null;
-function updateView() {
+function updateViewThrottled() {
   if (updateViewTimeout)
     clearTimeout(updateViewTimeout);
   updateViewTimeout = setTimeout(function () {
     updateViewTimeout = null;
-    var dump = document.getElementById('dump');
-    var existing = dump.querySelectorAll('.row > .grp:first-child');
-    if (existing.length > 1000) {
-      // purge cached rows
-      for (var q = 0; q < existing.length; q++) {
-        var p = existing[q];
-        do { p = p.parentNode; } while (p.className != 'row');
-        p.textContent = waitIcon;
-      }
-    }
-    // Find rows to display, assume all rows have the same height.
-    var rect = dump.getBoundingClientRect();
-    var rows = dump.querySelector('.rows');
-    var top = rows.firstChild.getBoundingClientRect().top;
-    var rowHeight =
-      (rows.lastChild.getBoundingClientRect().bottom - top) / rows.childNodes.length;
-    var start = Math.max(Math.floor((rect.top - top) / rowHeight), 0);
-    var end = Math.min(Math.ceil((rect.bottom - top) / rowHeight), rows.childNodes.length);
-    paintOctets(dump, start, end);
-  }, 100);
+    updateView();
+  }, 300);
 }
 
-document.getElementById("dump").addEventListener("scroll", function (e) { updateView(); });
+function updateView() {
+  var dump = document.getElementById('dump');
+  var existing = dump.querySelectorAll('.row > .grp:first-child');
+  if (existing.length > 10000) {
+    // purge cached rows
+    for (var q = 0; q < existing.length; q++) {
+      var p = existing[q];
+      do { p = p.parentNode; } while (p.className != 'row');
+      p.textContent = waitIcon;
+    }
+  }
+  // Find rows to display, assume all rows have the same height.
+  var rect = dump.getBoundingClientRect();
+  var rows = dump.querySelector('.rows');
+  var top = rows.firstChild.getBoundingClientRect().top;
+  var rowHeight =
+    (rows.lastChild.getBoundingClientRect().bottom - top) / rows.childNodes.length;
+  var start = Math.max(Math.floor((rect.top - top) / rowHeight), 0);
+  var end = Math.min(Math.ceil((rect.bottom - top) / rowHeight), rows.childNodes.length);
+  paintOctets(dump, start, end);
+}
+
+document.getElementById("dump").addEventListener("scroll", function (e) { updateViewThrottled(); });
 window.addEventListener("resize", function (e) { updateView(); });
 
 function openWasm(buffer) {
