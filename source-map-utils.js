@@ -117,7 +117,7 @@ function openMapOrSourceFile(buffer, name) {
   updateSourceMapView();
 }
 
-function decodeExpr(expr) {
+function decodeExpr(expr, frame_base) {
   if (expr.includes("//")) {
     expr = expr.split(/\s*\/\//)[0];
   }
@@ -146,7 +146,7 @@ function decodeExpr(expr) {
     return shift > 32 ? (n << (32 - shift)) >> (32 - shift) : n;
   };
   var i = 0, a, b;
-  var stack = ["FP"];
+  var stack = [frame_base || "?FP"];
   while (i < buf.length) {
     var code = buf[i++];
     switch (code) {
@@ -199,13 +199,13 @@ function decodeExpr(expr) {
         return "?(" + expr + ")";
     }
   }
-  return "S[" + stack.pop() + "]";
+  return "heap[" + stack.pop() + "]";
 }
 
 function getVariableLocations(xScopes) {
   if (!xScopes) return void 0;
   var offset = xScopes.code_section_offset || 0;
-  var queue = xScopes.debug_info.map(function (i) { return [i, null]; });
+  var queue = xScopes.debug_info.map(function (i) { return [i, null, null]; });
   var result = [];
   while (queue.length > 0) {
     var item = queue.shift();
@@ -215,10 +215,10 @@ function getVariableLocations(xScopes) {
       var ranges;
       if (Array.isArray(location)) {
         ranges = location.map(function (l) {
-          return {range: l.range, location: decodeExpr(l.expr)};
+          return {range: l.range, location: decodeExpr(l.expr, item[2])};
         });
       } else if (typeof location === 'string' && item[1]) { // FIXME vtable has no range
-        ranges = [{range: item[1], location: decodeExpr(location)}]
+        ranges = [{range: item[1], location: decodeExpr(location, item[2])}]
       }
       if (ranges)
         ranges.forEach(function (r) {
@@ -226,8 +226,9 @@ function getVariableLocations(xScopes) {
         });
     }
     var range = (item[0].high_pc ? [item[0].low_pc, item[0].high_pc] : item[0].range) || item[1];
+    var frame_base = item[0].frame_base ? decodeExpr(item[0].frame_base) : item[2];
     if (item[0].children)
-      item[0].children.forEach(function (i) { queue.push([i, range]); });
+      item[0].children.forEach(function (i) { queue.push([i, range, frame_base]); });
   }
   result.sort(function (a, b) { return a.start - b.start; });
   return result;
