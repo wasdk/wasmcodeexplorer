@@ -87,31 +87,51 @@ body {
   flex-direction: row;
 }
 
+.dump > .measurement {
+  position: absolute;
+  overflow: visible;
+  padding: 8px 8px 0 0;
+}
+.dump > .measurement-wo-margin {
+  position: absolute;
+  overflow: visible;
+  padding: 8px 0 0 0;
+}
+
 .dump .addresses {
   flex: 0 0 90px;
   background-color: #282828;
+  position: relative;
 }
 
 .dump .asciis {
   flex: 1 1 auto;
+  position: relative;
   /*padding: 8px;*/
 }
 
 .dump .rows {
   flex: 2.5 2.5 auto;
+  position: relative;
   /*padding: 8px;*/
 }
 
 .dump .address {
+  position: absolute;
+  left: 0; top: 0;
   margin: 8px;
 }
 
 .dump .row {
+  position: absolute;
+  left: 0; top: 0;
   margin: 8px;
   color: white;
 }
 
 .dump .ascii {
+  position: absolute;
+  left: 0; top: 0;
   margin: 8px;
   color: white;
 }

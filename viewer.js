@@ -82,13 +82,16 @@ function initialize() {
     return "";
   };
 
+  calcHexMetrics();
 }
 
+var selectedGrp = null;
 function flashOffset(offset, from) {
   var oldSelection = document.querySelectorAll(".selected");
   for (var i = 0; i < oldSelection.length; i++)
     oldSelection[i].classList.remove('selected');
 
+  selectedGrp = offset;
   if (!offset)
     return;
 
@@ -103,12 +106,9 @@ function flashOffset(offset, from) {
   var grps = document.querySelectorAll(".grp[data-offset = '" + offset + "']");
   if (grps.length === 0) {
     // rows are not cached
-    var row = document.querySelector(".row:nth-child(" + Math.floor(offset / perRow) + ")");
-    if (row) {
-      row.scrollIntoView();
-      updateView();
-      grps = document.querySelectorAll(".grp[data-offset = '" + offset + "']");
-    }
+    document.getElementById("dump").scrollTop = hexMetrics.lineHeight * Math.floor(offset / perRow);
+    updateView();
+    grps = document.querySelectorAll(".grp[data-offset = '" + offset + "']");
   }
   if (grps.length > 0 && from === 'line')
     grps[0].scrollIntoView();
@@ -231,14 +231,14 @@ function searchOctetColor(octetIndex) {
 
 function paintOctets(dump, startRow, endRow) {
   buildColumns(dump, startRow, endRow);
-  var currentRow = dump.querySelector('.row:nth-child(' + (startRow + 1) + ')');
   var j = searchOctetColor(startRow * perRow);
 
   var item = octetColors[j];
   var groupIndex = startRow * perRow - item.offset;
   var groupLength = item.length;
 
-  for (var r = startRow; r < endRow; r++, currentRow = currentRow.nextSibling) {
+  for (var r = startRow; r < endRow; r++) {
+    var currentRow = cachedRows[r];
     if (currentRow.querySelector('.grp')) {
       for (var skip = perRow; skip >= groupLength - groupIndex;) {
         skip -= groupLength - groupIndex;
@@ -264,6 +264,8 @@ function paintOctets(dump, startRow, endRow) {
           groupSpan.title = item.title;
         groupSpan.dataset.offset = item.offset;
         groupSpan.classList.add('lst');
+        if (groupSpan.dataset.offset == selectedGrp)
+          groupSpan.classList.add('selected');
       }
       groupSpan.appendChild(octet);
       if (++groupIndex >= groupLength) {
@@ -309,12 +311,39 @@ function disassemble() {
   }
 }
 
+var cachedRows = [];
+var cachedRowsCount = 0;
+
 function buildColumns(dump, startRow, endRow) {
-  var rows = dump.querySelectorAll('.rows > .row');
-  var asciis = dump.querySelectorAll('.asciis > .ascii');
-  for (var i = startRow; i < endRow; i++) {
-    var row = rows[i];
-    if (row.querySelector('.o')) continue;
+  var insertIndex = cachedRows.reduce(function (acc, r, index) {
+    return r && index < startRow ? acc + 1 : acc;
+  }, 0);
+  for (var i = startRow; i < endRow; i++, insertIndex++) {
+    if (cachedRows[i]) continue;
+
+    var addresses = dump.querySelector('.addresses');
+    var rows = dump.querySelector('.rows');
+    var asciis = dump.querySelector('.asciis');
+
+    var offset = Math.ceil(hexMetrics.lineHeight * i);
+    var address = document.createElement('div');
+    address.className = 'address';
+    address.style.top = offset + "px";
+    var rowOffset = i * perRow;
+    address.textContent = "0x" + toHex(rowOffset, 8);
+    addresses.insertBefore(address, addresses.childNodes[insertIndex] || null);
+    var row = document.createElement('div');
+    row.className = 'row';
+    row.style.top = offset + "px";
+    rows.insertBefore(row, rows.childNodes[insertIndex] || null);
+    var ascii = document.createElement('div');
+    ascii.className = 'ascii';
+    ascii.style.top = offset + "px";
+    asciis.insertBefore(ascii, asciis.childNodes[insertIndex] || null);
+
+    cachedRows[i] = row;
+    cachedRowsCount++;
+
     var rowOffset = i * perRow;
     var itemsCount = Math.min(content.length - rowOffset, perRow);
     row.textContent = '';
@@ -327,73 +356,85 @@ function buildColumns(dump, startRow, endRow) {
       row.appendChild(octet);
       str += b >= 32 && b < 127 ? String.fromCharCode(b) : '.';
     }
-    asciis[i].textContent = str;
+    ascii.textContent = str;
   }
 }
 
-var waitIcon = '\u00A0';
-
 function buildHexDump() {
+  var dumpContentHeight = hexMetrics.lineHeight * Math.ceil(content.length / perRow) + "px";
+
   var dump = document.getElementById('dump');
   var addresses = dump.querySelector('.addresses');
   addresses.textContent = '';
+  addresses.style.height = dumpContentHeight;
   var rows = dump.querySelector('.rows');
   rows.textContent = '';
+  rows.style.height = dumpContentHeight;
   var asciis = dump.querySelector('.asciis');
   asciis.textContent = '';
-  var rowCount = Math.max(1, Math.ceil(content.length / perRow));
-  for (var i = 0; i < rowCount; i++) {
-    var address = document.createElement('div');
-    address.className = 'address';
-    var rowOffset = i * perRow;
-    address.textContent = "0x" + toHex(rowOffset, 8);
-    addresses.appendChild(address);
-    var row = document.createElement('div');
-    row.className = 'row';
-    row.textContent = waitIcon;
-    rows.appendChild(row);
-    var ascii = document.createElement('div');
-    ascii.className = 'ascii';
-    ascii.textContent = waitIcon;
-    asciis.appendChild(ascii);
-  }
+  asciis.style.height = dumpContentHeight;
   return dump;
 }
 
 var updateViewTimeout = null;
-function updateViewThrottled() {
+function updateViewThrottled(needLayout) {
   if (updateViewTimeout)
     clearTimeout(updateViewTimeout);
   updateViewTimeout = setTimeout(function () {
     updateViewTimeout = null;
-    updateView();
-  }, 300);
+    updateView(needLayout);
+  }, 100);
 }
 
-function updateView() {
+var hexMetrics = {
+  lineHeight: 0,
+  charWidth: 0,
+  cellMarginWidth: 0,
+};
+
+function calcHexMetrics() {
   var dump = document.getElementById('dump');
-  var existing = dump.querySelectorAll('.row > .grp:first-child');
-  if (existing.length > 10000) {
-    // purge cached rows
-    for (var q = 0; q < existing.length; q++) {
-      var p = existing[q];
-      do { p = p.parentNode; } while (p.className != 'row');
-      p.textContent = waitIcon;
-    }
-  }
+  var test = document.createElement('div');
+  test.className = "measurement";
+  test.textContent = "00000000";
+  dump.appendChild(test);
+  var rect = test.getBoundingClientRect();
+  var width = rect.width, height = rect.height;
+  test.className = "measurement-wo-margin";
+  var widthWOMargin = test.getBoundingClientRect().width;
+  test.remove();
+
+  hexMetrics = {
+    lineHeight: Math.floor(height),
+    charWidth: widthWOMargin / 8,
+    cellMarginWidth: width - widthWOMargin,
+  };
+}
+
+function purgeCachedItems() {
+  cachedRows.forEach(function (row) { row.remove(); });
+  cachedRows = [];
+}
+
+function layout() {
+  purgeCachedItems();
+  calcHexMetrics();
+  buildHexDump();
+}
+
+function updateView(needLayout) {
+  if (needLayout) layout();
+
+  var dump = document.getElementById('dump');
+  if (cachedRowsCount > 10000) purgeCachedItems();
   // Find rows to display, assume all rows have the same height.
-  var rect = dump.getBoundingClientRect();
-  var rows = dump.querySelector('.rows');
-  var top = rows.firstChild.getBoundingClientRect().top;
-  var rowHeight =
-    (rows.lastChild.getBoundingClientRect().bottom - top) / rows.childNodes.length;
-  var start = Math.max(Math.floor((rect.top - top) / rowHeight), 0);
-  var end = Math.min(Math.ceil((rect.bottom - top) / rowHeight), rows.childNodes.length);
+  var start = Math.max(Math.floor(dump.scrollTop / hexMetrics.lineHeight), 0);
+  var end = Math.min(Math.ceil((dump.scrollTop + dump.clientHeight) / hexMetrics.lineHeight), Math.ceil(content.length / perRow));
   paintOctets(dump, start, end);
 }
 
-document.getElementById("dump").addEventListener("scroll", function (e) { updateViewThrottled(); });
-window.addEventListener("resize", function (e) { updateView(); });
+document.getElementById("dump").addEventListener("scroll", function (e) { updateView(false); });
+window.addEventListener("resize", function (e) { updateView(true); });
 
 function openWasm(buffer) {
   content = new Uint8Array(buffer);
@@ -402,8 +443,7 @@ function openWasm(buffer) {
   disassemble();
   sourceMapUtils.checkAndLoadDWARF(content);
 
-  buildHexDump();
-  updateView();
+  updateView(true);
 }
 
 function loadForURL(url) {
