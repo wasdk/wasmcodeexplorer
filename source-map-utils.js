@@ -145,11 +145,19 @@ function decodeExpr(expr, frame_base) {
     n |= b << shift; shift += 7;
     return shift > 32 ? (n << (32 - shift)) >> (32 - shift) : n;
   };
+  var popLocation = function () {
+    var loc = stack.pop();
+    if (loc == "<value>") return "" + stack.pop();
+    return "heap[" + loc + "]";
+  }
   var i = 0, a, b;
   var stack = [frame_base || "?FP"];
   while (i < buf.length) {
     var code = buf[i++];
     switch (code) {
+      case 0x03: // DW_OP_addr
+        stack.push("heap[" + readU32() + "]");
+        break;
       case 0x08: // DW_OP_const1u 0x08 1 1-byte constant
         stack.push(readU8());
         break;
@@ -175,17 +183,40 @@ function decodeExpr(expr, frame_base) {
         stack.push(readS());
         break;
 
+      case 0x1c: // DW_OP_minus
+        b = stack.pop(); a = stack.pop();
+        stack.push(a + "-" + b);
+        break;
+
       case 0x22: //DW_OP_plus
         b = stack.pop(); a =stack.pop();
         stack.push(a + "+" + b);
         break;
+
       case 0x23: //DW_OP_plus_uconst
         b = readU(); a =stack.pop();
         stack.push(a + "+" + b);
         break;
 
+      case 0x30: case 0x31: case 0x32: case 0x33: // DW_OP_lit0..3
+      case 0x34: case 0x35: case 0x36: case 0x37:
+      case 0x38: case 0x39: case 0x3a: case 0x3b:
+      case 0x3c: case 0x3d: case 0x3e: case 0x3f:
+      case 0x40: case 0x41: case 0x42: case 0x43:
+      case 0x44: case 0x45: case 0x46: case 0x47:
+      case 0x48: case 0x49: case 0x4a: case 0x4b:
+      case 0x4c: case 0x4d: case 0x4e: case 0x4f:
+        stack.push("" + (code - 0x30));
+        break;
+
+      case 0x93: // DW_OP_piece
+        a = readS();
+        stack.push("piece(" + popLocation() + ", " + a + ")");
+        break;
+
       case 0x9F: // DW_OP_stack_value
-        return "" + stack.pop();
+        stack.push("<value>");
+        break;
 
       case 0xF6: // WASM ext (old) // FIXME phase out
       case 0xED: // WASM ext
@@ -199,7 +230,7 @@ function decodeExpr(expr, frame_base) {
         return "?(" + expr + ")";
     }
   }
-  return "heap[" + stack.pop() + "]";
+  return popLocation();
 }
 
 function getVariableLocations(xScopes) {
@@ -211,7 +242,7 @@ function getVariableLocations(xScopes) {
     var item = queue.shift();
     if (item[0].tag == "variable" || item[0].tag == "formal_parameter") {
       var location = item[0].location;
-      var name = item[0].name;
+      var name = item[0].name || item[0].abstract_origin;
       var ranges;
       if (Array.isArray(location)) {
         ranges = location.map(function (l) {
