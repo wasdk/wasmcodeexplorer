@@ -232,7 +232,6 @@ function decodeExpr(expr, frame_base) {
   }
   return popLocation();
 }
-
 function getVariableLocations(xScopes) {
   if (!xScopes) return void 0;
   var offset = xScopes.code_section_offset || 0;
@@ -241,22 +240,26 @@ function getVariableLocations(xScopes) {
   while (queue.length > 0) {
     var item = queue.shift();
     if (item[0].tag == "variable" || item[0].tag == "formal_parameter") {
-      var location = item[0].location;
       var name = item[0].name || item[0].abstract_origin;
+      if (!name) continue; // FIXME no-name vars/params
+      var location = item[0].location;
       var ranges;
       if (Array.isArray(location)) {
         ranges = location.map(function (l) {
           return {range: l.range, location: decodeExpr(l.expr, item[2])};
         });
       } else if (typeof location === 'string' && item[1]) { // FIXME vtable has no range
-        ranges = [{range: item[1], location: decodeExpr(location, item[2])}]
+        var parentRanges = Array.isArray(item[1]) ? item[1] : [item[1]];
+        ranges = parentRanges.map(function (pr) {
+          return {range: pr, location: decodeExpr(location, item[2])};
+        });
       }
       if (ranges)
         ranges.forEach(function (r) {
           result.push({name: name, start: r.range[0] + offset, end: r.range[1] + offset, location: r.location});
         });
     }
-    var range = (item[0].high_pc ? [item[0].low_pc, item[0].high_pc] : item[0].range) || item[1];
+    var range = (item[0].high_pc ? [item[0].low_pc, item[0].high_pc] : item[0].range || item[0].ranges) || item[1];
     var frame_base = item[0].frame_base ? decodeExpr(item[0].frame_base) : item[2];
     if (item[0].children)
       item[0].children.forEach(function (i) { queue.push([i, range, frame_base]); });
