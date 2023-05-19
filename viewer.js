@@ -1,4 +1,5 @@
 var wasmparser = require('wasmparser');
+var wasmdis = require('wasmdis');
 var sourceMapUtils = require('./source-map-utils.js');
 
 var colors;
@@ -279,14 +280,32 @@ function paintOctets(dump, startRow, endRow) {
   }
 }
 
+function readNames(data) {
+  try {
+    var parser = new wasmparser.BinaryReader();
+    parser.setData(data.buffer, 0, data.length);
+    var namesReader = new wasmdis.NameSectionReader();
+    namesReader.read(parser);
+    if (namesReader.hasValidNames()) {
+      return namesReader.getNameResolver();
+    }
+  } catch (_) {
+    // ignoring errors
+  }
+  return null;
+}
+
 function disassemble() {
   var text = document.getElementById('text');
   text.textContent = '';
   try {
+    var nameResolver = readNames(content);
     var reader = new wasmparser.BinaryReader();
     reader.setData(content, 0, content.byteLength);
-    var dis = new wasmparser.WasmDisassembler();
+    var dis = new wasmdis.WasmDisassembler();
     dis.addOffsets = true;
+    if (nameResolver)
+      dis.nameResolver = nameResolver;
     var done = dis.disassembleChunk(reader);
     var result = dis.getResult();
     result.lines.forEach(function (s, index) {

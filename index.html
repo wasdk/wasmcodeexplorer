@@ -35,17 +35,10 @@
         <script>
             SystemJS.config({
               map: {
-                'wasmparser': 'https://npmcdn.com/wasmparser/',
+                'wasmparser': 'https://npmcdn.com/wasmparser/dist/cjs/WasmParser.js',
+                'wasmdis': 'https://npmcdn.com/wasmparser/dist/cjs/WasmDis.js',
               },
               packages: {
-                'wasmparser': {
-                  format: 'cjs',
-                  main: './dist/cjs/index.js',
-                  defaultExtension: 'js',
-                  map: {
-                    'stream': 'data:,exports.Transform=function(){}',
-                  },
-                },
               }
             });
             System.import('./viewer.js');
