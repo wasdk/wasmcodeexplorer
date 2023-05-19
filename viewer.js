@@ -304,6 +304,7 @@ function disassemble() {
     reader.setData(content, 0, content.byteLength);
     var dis = new wasmdis.WasmDisassembler();
     dis.addOffsets = true;
+    dis.skipTypes = false;
     if (nameResolver)
       dis.nameResolver = nameResolver;
     var done = dis.disassembleChunk(reader);
